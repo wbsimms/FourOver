@@ -18,7 +18,7 @@ namespace FourOverTest
         {
             FourOverClient client = new FourOverClient();
             Assert.IsNotNull(client);
-            List<FrontModel> models = client.Rip();
+            List<FrontModel> models = client.Rip("postcards");
         }
 
         [TestMethod]

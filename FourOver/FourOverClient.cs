@@ -21,7 +21,7 @@ namespace FourOver
         {
         }
 
-        public List<FrontModel> Rip()
+        public List<FrontModel> Rip(string product)
         {
             string html;
             using (var browser = new IE("https://trade.4over.com"))
@@ -36,7 +36,7 @@ namespace FourOver
                     img.Click();
                 }
 //                browser.GoTo("https://trade.4over.com/products/notepads");
-                browser.GoTo("https://trade.4over.com/products/postcards");
+                browser.GoTo("https://trade.4over.com/products/"+product);
                 browser.WaitForComplete();
                 html = browser.Html;
             }
@@ -45,7 +45,7 @@ namespace FourOver
             if (File.Exists(filename)) File.Delete(filename);
             foreach (FrontModel model in models)
             {
-                if (model.Title.Contains("Direct Mail")) continue;
+                if (model.Title.Contains("Direct  Mail")) continue;
                 try
                 {
                     GetProductData(model);
@@ -113,16 +113,17 @@ namespace FourOver
                         {
                             turnAroundTimeList.Select(turnAroundTime);
                             browser.WaitForComplete();
-                            Span subTotalSpan = browser.Span(Find.ById("subby"));
-                            string subtotal = subTotalSpan.Text;
 
                             browser.RadioButton(Find.ById("job_1_ship_type_EQ_BILL")).Checked = true;
                             browser.WaitUntilContainsText("Job will be shipped to:");
 
                             SelectList shippingList = browser.SelectList(Find.ById("job_1_shipping_select"));
+
+                            Span subTotalSpan = browser.Span(Find.ById("subby"));
+                            string subtotal = subTotalSpan.Text;
+                            
                             PriceRecord priceRecord = new PriceRecord() { Color = color, Price = subtotal, RunSize = runsize, TurnAroundTime = turnAroundTime };
                             priceRecord.ShippingList = new List<string>();
-
                             foreach (string shippingOption in shippingList.AllContents)
                             {
                                 priceRecord.ShippingList.Add(shippingOption);
