@@ -42,9 +42,11 @@ namespace FourOver
             }
             List<FrontModel> models = GetFrontModels(html);
             string filename = "4OverPostcards.txt";
-            if (File.Exists(filename)) File.Delete(filename);
+            Dictionary<string,bool> completedTitles = new Dictionary<string, bool>();
+            if (File.Exists(filename)) completedTitles = GetCompletedTitles(filename);
             foreach (FrontModel model in models)
             {
+                if (completedTitles.ContainsKey(model.Title)) continue;
                 if (model.Title.Contains("Direct  Mail")) continue;
                 try
                 {
@@ -65,6 +67,19 @@ namespace FourOver
             }
 
             return models;
+        }
+
+        private Dictionary<string, bool> GetCompletedTitles(string filename)
+        {
+            string[] lines = File.ReadAllLines(filename);
+            Dictionary<string,bool> titles = new Dictionary<string, bool>();
+            foreach (string line in lines)
+            {
+                string[] bits = line.Split('\t');
+                if (!titles.ContainsKey(bits[1]))
+                    titles.Add(bits[1],true);
+            }
+            return titles;
         }
 
         public List<FrontModel> GetFrontModels(string html)
