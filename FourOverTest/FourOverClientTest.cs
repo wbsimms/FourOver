@@ -49,12 +49,12 @@ namespace FourOverTest
             Assert.IsNotNull(models);
         }
 
-        [TestMethod]
-        public void GetProductDataTest()
-        {
-            FourOverClient client = new FourOverClient();
-            client.GetProductData(new FrontModel() { Link = "/products/70LB-NPUC25-4.25X5.5?idc=101" });
-        }
+        //[TestMethod]
+        //public void GetProductDataTest()
+        //{
+        //    FourOverClient client = new FourOverClient();
+        //    client.GetProductData(new FrontModel() { Link = "/products/70LB-NPUC25-4.25X5.5?idc=101" });
+        //}
 
 
     }
