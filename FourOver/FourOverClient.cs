@@ -97,6 +97,8 @@ namespace FourOver
                 items.RemoveAt(0);
                 foreach (string runsize in items)
                 {
+                    int parsed = Convert.ToInt32(runsize);
+                    if (parsed >= 10000) continue;
                     runsizeList.Select(runsize);
                     browser.WaitForComplete();
                     SelectList colorList = browser.SelectList(Find.ById("color"));
