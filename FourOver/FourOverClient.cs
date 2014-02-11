@@ -146,11 +146,11 @@ namespace FourOver
 
                             if (browser.SelectList(Find.ById("options[0]")).Exists)
                             {
-                                browser.SelectList(Find.ById("options[0]")).Select(new Regex("No "));
+                                browser.SelectList(Find.ById("options[0]")).Select(new Regex("1/4"));
                             }
                             if (browser.SelectList(Find.ById("options[1]")).Exists)
                             {
-                                browser.SelectList(Find.ById("options[1]")).Select(new Regex("No "));
+                                browser.SelectList(Find.ById("options[1]")).Select(new Regex("2"));
                             }
                             if (browser.SelectList(Find.ById("options[2]")).Exists)
                             {
