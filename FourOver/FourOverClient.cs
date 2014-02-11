@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using HtmlAgilityPack;
@@ -16,13 +17,15 @@ namespace FourOver
 {
     public class FourOverClient
     {
+        private string productColumnName;
 
         public FourOverClient()
         {
         }
 
-        public List<FrontModel> Rip(string product)
+        public List<FrontModel> Rip(string product, string productName)
         {
+            this.productColumnName = productName;
             string html;
             using (var browser = new IE("https://trade.4over.com"))
             {
@@ -36,35 +39,56 @@ namespace FourOver
                     img.Click();
                 }
 //                browser.GoTo("https://trade.4over.com/products/notepads");
-                browser.GoTo("https://trade.4over.com/products/"+product);
+                browser.GoTo("https://trade.4over.com/products/" + product);
                 browser.WaitForComplete();
+                browser.WaitUntilContainsText("List View");
+                SelectList dimensionsList = browser.SelectList(Find.ById("dimensions"));
+                if (dimensionsList.Exists) dimensionsList.Select("All");
+                browser.WaitForComplete();
+                browser.WaitUntilContainsText("SLIM BUSINESS CARDS");
                 html = browser.Html;
-            }
-            List<FrontModel> models = GetFrontModels(html);
-            string filename = "4OverPostcards.txt";
-            if (File.Exists(filename)) File.Delete(filename);
-            foreach (FrontModel model in models)
-            {
-                if (model.Title.Contains("Direct  Mail")) continue;
-                try
-                {
-                    GetProductData(model);
-                    Console.WriteLine("------------ Record Data");
-                    Console.WriteLine(model.ToString());
-                    File.AppendAllText(filename,model.ToString());
-                    Console.WriteLine("------------ End Record Data");
-                }
-                catch (Exception)
-                {
-                    Console.WriteLine("=========== Exception ===========================");
-                    Console.WriteLine(model.ToString());
-                    Console.WriteLine("Error getting data for model :"+model.Title + " == "+model.Link);
-                    Console.WriteLine("=========== End Exception ===========================");
-                }
-                //break;
-            }
 
-            return models;
+                List<FrontModel> models = GetFrontModels(html);
+                string filename = "4Over" + productColumnName + ".txt";
+                Dictionary<string, bool> completedTitles = new Dictionary<string, bool>();
+                if (File.Exists(filename)) completedTitles = GetCompletedTitles(filename);
+                foreach (FrontModel model in models)
+                {
+                    if (completedTitles.ContainsKey(model.Title)) continue;
+                    if (model.Title.Contains("Direct  Mail")) continue;
+                    try
+                    {
+                        GetProductData(model, browser);
+                        Console.WriteLine("------------ Record Data");
+                        Console.WriteLine(model.ToString());
+                        File.AppendAllText(filename, model.ToString());
+                        Console.WriteLine("------------ End Record Data");
+                    }
+                    catch (Exception)
+                    {
+                        Console.WriteLine("=========== Exception ===========================");
+                        Console.WriteLine(model.ToString());
+                        Console.WriteLine("Error getting data for model :" + model.Title + " == " + model.Link);
+                        Console.WriteLine("=========== End Exception ===========================");
+                    }
+                    //break;
+                }
+
+                return models;
+            }
+        }
+
+        private Dictionary<string, bool> GetCompletedTitles(string filename)
+        {
+            string[] lines = File.ReadAllLines(filename);
+            Dictionary<string,bool> titles = new Dictionary<string, bool>();
+            foreach (string line in lines)
+            {
+                string[] bits = line.Split('\t');
+                if (!titles.ContainsKey(bits[1]))
+                    titles.Add(bits[1],true);
+            }
+            return titles;
         }
 
         public List<FrontModel> GetFrontModels(string html)
@@ -75,7 +99,7 @@ namespace FourOver
             HtmlNodeCollection nodes = hdoc.DocumentNode.SelectNodes("//div[@class=\"alt\" or @class=\"reg\"]");
             foreach (HtmlNode node in nodes)
             {
-                FrontModel model = new FrontModel();
+                FrontModel model = new FrontModel(productColumnName);
                 HtmlNodeCollection titleNode = node.SelectNodes("./div[@class=\"prodname\"]/a");
                 model.Title = titleNode[0].Attributes["title"].Value;
                 model.Link = titleNode[0].Attributes["href"].Value;
@@ -87,10 +111,11 @@ namespace FourOver
             return retval;
         }
 
-        public void GetProductData(FrontModel model)
+        public void GetProductData(FrontModel model,IE browser)
         {
-            using (var browser = new IE("https://trade.4over.com" + model.Link))
-            {
+            //using (var browser = new IE("https://trade.4over.com" + model.Link))
+            //{
+            browser.GoTo("https://trade.4over.com" + model.Link);
                 browser.WaitForComplete();
                 SelectList runsizeList = browser.SelectList(Find.ById("runsize"));
                 StringCollection items = runsizeList.AllContents;
@@ -98,7 +123,7 @@ namespace FourOver
                 foreach (string runsize in items)
                 {
                     int parsed = Convert.ToInt32(runsize);
-                    if (parsed >= 10000) continue;
+                    if (parsed > 10000) continue;
                     runsizeList.Select(runsize);
                     browser.WaitForComplete();
                     SelectList colorList = browser.SelectList(Find.ById("color"));
@@ -116,14 +141,28 @@ namespace FourOver
                             turnAroundTimeList.Select(turnAroundTime);
                             browser.WaitForComplete();
 
+                            Span subTotalSpan = browser.Span(Find.ById("subby"));
+                            string subtotal = subTotalSpan.Text;
+
+                            if (browser.SelectList(Find.ById("options[0]")).Exists)
+                            {
+                                browser.SelectList(Find.ById("options[0]")).Select(new Regex("No "));
+                            }
+                            if (browser.SelectList(Find.ById("options[1]")).Exists)
+                            {
+                                browser.SelectList(Find.ById("options[1]")).Select(new Regex("No "));
+                            }
+                            if (browser.SelectList(Find.ById("options[2]")).Exists)
+                            {
+                                browser.SelectList(Find.ById("options[2]")).Select(new Regex("No "));
+                            }
+                            browser.WaitForComplete();
+
                             browser.RadioButton(Find.ById("job_1_ship_type_EQ_BILL")).Checked = true;
                             browser.WaitUntilContainsText("Job will be shipped to:");
 
                             SelectList shippingList = browser.SelectList(Find.ById("job_1_shipping_select"));
 
-                            Span subTotalSpan = browser.Span(Find.ById("subby"));
-                            string subtotal = subTotalSpan.Text;
-                            
                             PriceRecord priceRecord = new PriceRecord() { Color = color, Price = subtotal, RunSize = runsize, TurnAroundTime = turnAroundTime };
                             priceRecord.ShippingList = new List<string>();
                             foreach (string shippingOption in shippingList.AllContents)
@@ -134,7 +173,7 @@ namespace FourOver
                             model.Prices.Add(priceRecord);
                         }
                     }
-                }
+                
             }
         }
     }
@@ -147,6 +186,12 @@ namespace FourOver
         public string Link { get; set; }
         public string Price { get; set; }
         public List<PriceRecord> prices = new List<PriceRecord>();
+        public string productName { get; set; }
+
+        public FrontModel(string productName)
+        {
+            this.productName = productName;
+        }
 
         public List<PriceRecord> Prices
         {
@@ -160,7 +205,7 @@ namespace FourOver
             foreach (PriceRecord priceRecord in Prices)
             {
                 string shipping = string.Join("\t", priceRecord.ShippingList);
-                sb.AppendFormat(rowPrototype, "Postcards", Title, priceRecord.RunSize, priceRecord.Color,
+                sb.AppendFormat(rowPrototype, productName, Title, priceRecord.RunSize, priceRecord.Color,
                     priceRecord.TurnAroundTime, priceRecord.Price,shipping);
             }
             return sb.ToString();
