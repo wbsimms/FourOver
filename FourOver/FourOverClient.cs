@@ -42,10 +42,10 @@ namespace FourOver
                 browser.GoTo("https://trade.4over.com/products/" + product);
                 browser.WaitForComplete();
                 browser.WaitUntilContainsText("List View");
-                SelectList dimensionsList = browser.SelectList(Find.ById("dimensions"));
-                if (dimensionsList.Exists) dimensionsList.Select("All");
-                browser.WaitForComplete();
-                browser.WaitUntilContainsText("SLIM BUSINESS CARDS");
+                //SelectList dimensionsList = browser.SelectList(Find.ById("dimensions"));
+                //if (dimensionsList.Exists) dimensionsList.Select("All");
+                //browser.WaitForComplete();
+                //browser.WaitUntilContainsText("SLIM BUSINESS CARDS");
                 html = browser.Html;
 
                 List<FrontModel> models = GetFrontModels(html);
@@ -141,41 +141,84 @@ namespace FourOver
                             turnAroundTimeList.Select(turnAroundTime);
                             browser.WaitForComplete();
 
-                            Span subTotalSpan = browser.Span(Find.ById("subby"));
-                            string subtotal = subTotalSpan.Text;
+                            browser.WaitUntilContainsText("Select base job options");
+                            string foldOptions = "";
+                            string scoringOptions = "";
+                            if (browser.ContainsText("Mailing Service")) FindAndSetMailingService(browser);
+                            if (browser.ContainsText("Scoring Options")) scoringOptions = GetScoringOptions(browser);
+                            if (browser.ContainsText("Folding Options"))  foldOptions = GetFoldingOptions(browser);
 
-                            if (browser.SelectList(Find.ById("options[0]")).Exists)
-                            {
-                                browser.SelectList(Find.ById("options[0]")).Select(new Regex("1/4"));
-                            }
-                            if (browser.SelectList(Find.ById("options[1]")).Exists)
-                            {
-                                browser.SelectList(Find.ById("options[1]")).Select(new Regex("2"));
-                            }
-                            if (browser.SelectList(Find.ById("options[2]")).Exists)
-                            {
-                                browser.SelectList(Find.ById("options[2]")).Select(new Regex("No "));
-                            }
-                            browser.WaitForComplete();
+                            browser.WaitUntilContainsText("Ship To");
 
                             browser.RadioButton(Find.ById("job_1_ship_type_EQ_BILL")).Checked = true;
                             browser.WaitUntilContainsText("Job will be shipped to:");
 
                             SelectList shippingList = browser.SelectList(Find.ById("job_1_shipping_select"));
 
-                            PriceRecord priceRecord = new PriceRecord() { Color = color, Price = subtotal, RunSize = runsize, TurnAroundTime = turnAroundTime };
+                            Span subTotalSpan = browser.Span(Find.ById("subby"));
+                            string subtotal = subTotalSpan.Text;
+
+                            PriceRecord priceRecord = new PriceRecord() {ScoringOptions = scoringOptions, FoldOptions = foldOptions,Color = color, Price = subtotal, RunSize = runsize, TurnAroundTime = turnAroundTime };
                             priceRecord.ShippingList = new List<string>();
                             foreach (string shippingOption in shippingList.AllContents)
                             {
                                 priceRecord.ShippingList.Add(shippingOption);
                             }
-
                             model.Prices.Add(priceRecord);
                         }
                     }
-                
             }
         }
+
+        private string GetFoldingOptions(IE browser)
+        {
+            foreach (SelectList list in browser.SelectLists)
+            {
+                if (list.AllContents.Contains("FLAT - No Folding"))
+                {
+                    StringCollection strings = list.AllContents;
+                    strings.RemoveAt(0);
+                    List<string> optslist = new List<string>(); ;
+                    foreach (string s in strings)
+                    {
+                        optslist.Add(s);
+                    }
+                    return string.Join("\t", optslist.ToArray());
+                }
+            }
+            return "";
+        }
+
+        private void FindAndSetMailingService(IE browser)
+        {
+            foreach (SelectList list in browser.SelectLists)
+            {
+                if (list.AllContents.Contains("No Direct Mailing Service"))
+                {
+                    list.Select("No Direct Mailing Service");
+                }
+            }
+        }
+
+        private string GetScoringOptions(IE browser)
+        {
+            foreach (SelectList list in browser.SelectLists)
+            {
+                if (list.AllContents.Contains("No Scoring"))
+                {
+                    StringCollection strings = list.AllContents;
+                    strings.RemoveAt(0);
+                    List<string> optslist = new List<string>();;
+                    foreach (string s in strings)
+                    {
+                        optslist.Add(s);
+                    }
+                    return string.Join("\t",optslist.ToArray());
+                }
+            }
+            return "";
+        }
+
     }
 
 
@@ -201,12 +244,12 @@ namespace FourOver
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            string rowPrototype = "{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\r\n";
+            string rowPrototype = "{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\r\n";
             foreach (PriceRecord priceRecord in Prices)
             {
                 string shipping = string.Join("\t", priceRecord.ShippingList);
                 sb.AppendFormat(rowPrototype, productName, Title, priceRecord.RunSize, priceRecord.Color,
-                    priceRecord.TurnAroundTime, priceRecord.Price,shipping);
+                    priceRecord.TurnAroundTime, priceRecord.Price,shipping,priceRecord.FoldOptions,priceRecord.ScoringOptions);
             }
             return sb.ToString();
         }
@@ -219,5 +262,7 @@ namespace FourOver
         public string TurnAroundTime { get; set; }
         public string Price { get; set; }
         public List<string> ShippingList { get; set; }
+        public string FoldOptions { get; set; }
+        public string ScoringOptions { get; set; }
     }
 }

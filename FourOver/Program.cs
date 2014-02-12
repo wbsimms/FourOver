@@ -12,7 +12,7 @@ namespace FourOver
         public static void Main(string[] args)
         {
             FourOverClient fourOverClient = new FourOverClient();
-            fourOverClient.Rip("business-cards","BusinessCards");
+            fourOverClient.Rip("flyers-and-brochures", "FlyersAndBrochures");
         }
     }
 }
