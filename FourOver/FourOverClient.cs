@@ -144,9 +144,11 @@ namespace FourOver
                             browser.WaitUntilContainsText("Select base job options");
                             string foldOptions = "";
                             string scoringOptions = "";
+                            string scoringAndFoldOptions = "";
                             if (browser.ContainsText("Mailing Service")) FindAndSetMailingService(browser);
                             if (browser.ContainsText("Scoring Options")) scoringOptions = GetScoringOptions(browser);
                             if (browser.ContainsText("Folding Options"))  foldOptions = GetFoldingOptions(browser);
+                            if (browser.ContainsText("Score and Fold")) scoringAndFoldOptions = GetScoreAndFoldOptions(browser);
 
                             browser.WaitUntilContainsText("Ship To");
 
@@ -158,7 +160,7 @@ namespace FourOver
                             Span subTotalSpan = browser.Span(Find.ById("subby"));
                             string subtotal = subTotalSpan.Text;
 
-                            PriceRecord priceRecord = new PriceRecord() {ScoringOptions = scoringOptions, FoldOptions = foldOptions,Color = color, Price = subtotal, RunSize = runsize, TurnAroundTime = turnAroundTime };
+                            PriceRecord priceRecord = new PriceRecord() {ScoreAndFoldOptions = scoringAndFoldOptions, ScoringOptions = scoringOptions, FoldOptions = foldOptions,Color = color, Price = subtotal, RunSize = runsize, TurnAroundTime = turnAroundTime };
                             priceRecord.ShippingList = new List<string>();
                             foreach (string shippingOption in shippingList.AllContents)
                             {
@@ -168,6 +170,27 @@ namespace FourOver
                         }
                     }
             }
+        }
+
+        private string GetScoreAndFoldOptions(IE browser)
+        {
+            foreach (SelectList list in browser.SelectLists)
+            {
+                if (list.AllContents.Contains("No Scoring and Folding"))
+                {
+                    StringCollection strings = list.AllContents;
+                    strings.RemoveAt(0);
+                    List<string> optslist = new List<string>(); ;
+                    foreach (string s in strings)
+                    {
+                        optslist.Add(s);
+                    }
+                    list.Select(optslist[0]);
+                    return string.Join("\t", optslist.ToArray());
+                }
+            }
+            return "";
+            
         }
 
         private string GetFoldingOptions(IE browser)
@@ -244,12 +267,12 @@ namespace FourOver
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            string rowPrototype = "{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\r\n";
+            string rowPrototype = "{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\r\n";
             foreach (PriceRecord priceRecord in Prices)
             {
                 string shipping = string.Join("\t", priceRecord.ShippingList);
                 sb.AppendFormat(rowPrototype, productName, Title, priceRecord.RunSize, priceRecord.Color,
-                    priceRecord.TurnAroundTime, priceRecord.Price,shipping,priceRecord.FoldOptions,priceRecord.ScoringOptions);
+                    priceRecord.TurnAroundTime, priceRecord.Price,shipping,priceRecord.FoldOptions,priceRecord.ScoringOptions,priceRecord.ScoreAndFoldOptions);
             }
             return sb.ToString();
         }
@@ -264,5 +287,6 @@ namespace FourOver
         public List<string> ShippingList { get; set; }
         public string FoldOptions { get; set; }
         public string ScoringOptions { get; set; }
+        public string ScoreAndFoldOptions { get; set; }
     }
 }
