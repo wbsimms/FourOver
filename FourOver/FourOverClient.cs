@@ -42,10 +42,10 @@ namespace FourOver
                 browser.GoTo("https://trade.4over.com/products/" + product);
                 browser.WaitForComplete();
                 browser.WaitUntilContainsText("List View");
-                //SelectList dimensionsList = browser.SelectList(Find.ById("dimensions"));
-                //if (dimensionsList.Exists) dimensionsList.Select("All");
-                //browser.WaitForComplete();
-                //browser.WaitUntilContainsText("SLIM BUSINESS CARDS");
+                SelectList dimensionsList = browser.SelectList(Find.ById("dimensions"));
+                if (dimensionsList.Exists) dimensionsList.Select("All");
+                browser.WaitForComplete();
+                browser.WaitUntilContainsText("SLIM BUSINESS CARDS");
                 html = browser.Html;
 
                 List<FrontModel> models = GetFrontModels(html);
@@ -149,6 +149,8 @@ namespace FourOver
                             if (browser.ContainsText("Scoring Options")) scoringOptions = GetScoringOptions(browser);
                             if (browser.ContainsText("Folding Options"))  foldOptions = GetFoldingOptions(browser);
                             if (browser.ContainsText("Score and Fold")) scoringAndFoldOptions = GetScoreAndFoldOptions(browser);
+                            if (browser.ContainsText("Radius of Corners")) SetRadiusOfCorners(browser);
+                            if (browser.ContainsText("Round Corners")) SetRoundCorners(browser);
 
                             browser.WaitUntilContainsText("Ship To");
 
@@ -169,6 +171,29 @@ namespace FourOver
                             model.Prices.Add(priceRecord);
                         }
                     }
+            }
+        }
+
+        private void SetRoundCorners(IE browser)
+        {
+            foreach (SelectList list in browser.SelectLists)
+            {
+                if (list.AllContents.Contains("- Select Round Corners -"))
+                {
+                    list.Select(list.AllContents[1]);
+                }
+            }
+        }
+
+
+        private void SetRadiusOfCorners(IE browser)
+        {
+            foreach (SelectList list in browser.SelectLists)
+            {
+                if (list.AllContents.Contains("- Select Radius of Corners -"))
+                {
+                    list.Select(list.AllContents[1]);
+                }
             }
         }
 
