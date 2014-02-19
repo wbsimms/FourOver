@@ -25,7 +25,7 @@ namespace FourOverTest
                 int count = 0;
                 foreach (string bit in bits)
                 {
-                    if (count <= 5 || bit.StartsWith("UPS"))
+                    if (count <= 5 || bit.StartsWith("UPS") || string.IsNullOrEmpty(bit))
                     {
                         count++;
                         continue;
@@ -45,6 +45,14 @@ namespace FourOverTest
                         string foldType = bit.Substring(0, bit.IndexOf('(')-1);
 
                         newRow[pricePosition] = newPrice;
+                        newRow.Insert(insertPosition, foldType);
+                        newRows.Add(string.Join("\t", newRow));
+                        newRow = new List<string>(bits);
+                        count++;
+                    }
+                    else
+                    {
+                        string foldType = bit;
                         newRow.Insert(insertPosition, foldType);
                         newRows.Add(string.Join("\t", newRow));
                         newRow = new List<string>(bits);
